@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PrimeHealth ER Analytics Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:       #060D1A;
+  --surface:  #0D1F3C;
+  --card:     #112244;
+  --card2:    #0F1E3A;
+  --border:   rgba(255,255,255,0.06);
+  --accent:   #38BDF8;
+  --orange:   #F97316;
+  --green:    #10B981;
+  --pink:     #EC4899;
+  --purple:   #8B5CF6;
+  --gold:     #FBBF24;
+  --red:      #EF4444;
+  --text:     #E2EAF4;
+  --muted:    #6B8AAE;
+  --glow-a:   rgba(56,189,248,0.12);
+  --glow-o:   rgba(249,115,22,0.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;overflow-x:hidden}
+
+body::before{
+  content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 80% 60% at 10% 0%, rgba(56,189,248,0.05) 0%, transparent 60%),
+             radial-gradient(ellipse 60% 50% at 90% 100%, rgba(249,115,22,0.05) 0%, transparent 60%);
+  pointer-events:none;z-index:0;
+}
+
+/* ── HEADER ── */
+header{
+  position:sticky;top:0;z-index:100;
+  background:rgba(6,13,26,0.92);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  padding:0 40px;
+  display:flex;align-items:center;justify-content:space-between;
+  height:64px;
+}
+.brand{display:flex;align-items:center;gap:14px}
+.brand-icon{
+  width:40px;height:40px;border-radius:10px;
+  background:linear-gradient(135deg,#0E7490,#38BDF8);
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  box-shadow:0 0 20px rgba(56,189,248,0.3);
+}
+.brand h1{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;letter-spacing:0.03em}
+.brand p{font-size:10px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase}
+.header-right{display:flex;align-items:center;gap:16px}
+.analyst-tag{font-size:11px;color:var(--muted)}
+.analyst-tag strong{color:var(--accent)}
+.badge-live{background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);color:#10B981;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:0.08em}
+
+/* ── LAYOUT ── */
+main{position:relative;z-index:1;padding:28px 40px 60px;max-width:1600px;margin:0 auto}
+
+/* ── SECTION LABEL ── */
+.section-label{
+  font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:14px;
+  display:flex;align-items:center;gap:10px;
+}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── KPI GRID ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:28px}
+.kpi{
+  background:var(--card);border:1px solid var(--border);border-radius:14px;
+  padding:18px 16px 14px;position:relative;overflow:hidden;
+  transition:transform .2s,box-shadow .2s;
+}
+.kpi:hover{transform:translateY(-3px);box-shadow:0 10px 40px rgba(0,0,0,0.3)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi.c1::before{background:var(--accent)}
+.kpi.c2::before{background:var(--orange)}
+.kpi.c3::before{background:var(--green)}
+.kpi.c4::before{background:#6366F1}
+.kpi.c5::before{background:var(--purple)}
+.kpi.c6::before{background:var(--pink)}
+.kpi-label{font-size:9px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.kpi-value{font-family:'Syne',sans-serif;font-size:26px;font-weight:700;line-height:1;margin-bottom:4px}
+.kpi.c1 .kpi-value{color:var(--accent)}
+.kpi.c2 .kpi-value{color:var(--orange)}
+.kpi.c3 .kpi-value{color:var(--green)}
+.kpi.c4 .kpi-value{color:#6366F1}
+.kpi.c5 .kpi-value{color:var(--purple)}
+.kpi.c6 .kpi-value{color:var(--pink)}
+.kpi-sub{font-size:10px;color:var(--muted)}
+.kpi-icon{position:absolute;bottom:10px;right:14px;font-size:26px;opacity:0.1}
+
+/* ── CHARTS GRID ── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.grid-1-2{display:grid;grid-template-columns:1fr 2fr;gap:14px;margin-bottom:14px}
+.grid-2-1{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px}
+
+.chart-card{
+  background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 22px;
+}
+.chart-card.tall{padding-bottom:28px}
+.chart-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:600;margin-bottom:3px}
+.chart-sub{font-size:11px;color:var(--muted);margin-bottom:16px}
+
+/* ── HBAR ── */
+.hbar{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.hbar-lbl{font-size:11px;color:var(--muted);width:110px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hbar-track{flex:1;height:7px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden}
+.hbar-fill{height:100%;border-radius:4px;transition:width 1.2s cubic-bezier(.16,1,.3,1)}
+.hbar-val{font-size:11px;color:var(--text);font-weight:500;width:52px;text-align:right;flex-shrink:0}
+
+/* ── HEATMAP ── */
+.heatmap-wrap{overflow-x:auto}
+.heatmap{border-collapse:collapse;width:100%;font-size:10px}
+.heatmap th{padding:5px 6px;color:var(--muted);font-weight:600;text-align:center;white-space:nowrap}
+.heatmap td{padding:5px 6px;text-align:center;font-weight:600;border-radius:3px;min-width:40px}
+.h0{background:rgba(56,189,248,0.06);color:#94A3B8}
+.h1{background:rgba(56,189,248,0.12);color:#CBD5E1}
+.h2{background:rgba(56,189,248,0.2);color:#E2E8F0}
+.h3{background:rgba(56,189,248,0.3);color:#F8FAFC}
+.h4{background:rgba(56,189,248,0.45);color:#FFF}
+.h5{background:rgba(56,189,248,0.6);color:#FFF}
+.h6{background:#38BDF8;color:#0B1628}
+.h7{background:#0EA5E9;color:#0B1628}
+.h8{background:#0284C7;color:#FFF}
+.h9{background:#0369A1;color:#FFF}
+.hm-lbl{color:var(--muted);font-weight:500;text-align:left;padding-left:8px;white-space:nowrap}
+.hm-total{background:rgba(99,102,241,0.3);color:#A5B4FC;font-weight:700}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+thead th{font-size:9px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);padding:9px 12px;text-align:left;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.2);cursor:pointer}
+thead th:hover{color:var(--text)}
+tbody tr{border-bottom:1px solid var(--border);transition:background .15s;cursor:pointer}
+tbody tr:hover{background:rgba(255,255,255,0.025)}
+td{padding:9px 12px;font-size:11px}
+td.dim{color:var(--muted)}
+
+.pill{display:inline-block;padding:2px 8px;border-radius:8px;font-size:9px;font-weight:700}
+.p-prompt {background:rgba(16,185,129,.12);color:#10B981;border:1px solid rgba(16,185,129,.2)}
+.p-delayed{background:rgba(239,68,68,.12); color:#EF4444;border:1px solid rgba(239,68,68,.2)}
+.p-sat    {background:rgba(16,185,129,.12);color:#10B981;border:1px solid rgba(16,185,129,.2)}
+.p-dis    {background:rgba(239,68,68,.12); color:#EF4444;border:1px solid rgba(239,68,68,.2)}
+.p-neu    {background:rgba(251,191,36,.12);color:#FBBF24;border:1px solid rgba(251,191,36,.2)}
+.p-adm    {background:rgba(56,189,248,.12);color:#38BDF8;border:1px solid rgba(56,189,248,.2)}
+.p-dis2   {background:rgba(139,92,246,.12);color:#8B5CF6;border:1px solid rgba(139,92,246,.2)}
+
+/* ── PAGINATION ── */
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-top:1px solid var(--border)}
+.pagination span{font-size:11px;color:var(--muted)}
+.pg-btns{display:flex;gap:5px}
+.pg-btn{background:var(--surface);border:1px solid var(--border);color:var(--muted);width:28px;height:28px;border-radius:6px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.pg-btn:hover,.pg-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(56,189,248,.08)}
+
+/* ── FILTER BAR ── */
+.filters{display:flex;gap:10px;flex-wrap:wrap;padding:14px 40px;background:rgba(13,31,60,.5);border-bottom:1px solid var(--border);position:sticky;top:64px;z-index:90;backdrop-filter:blur(10px)}
+.filter-group{display:flex;align-items:center;gap:7px}
+.filter-group label{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+select{background:var(--card);color:var(--text);border:1px solid var(--border);padding:6px 26px 6px 9px;border-radius:7px;font-size:11px;font-family:inherit;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236B8AAE'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center;transition:border-color .2s}
+select:hover{border-color:var(--accent)}
+.btn-rst{background:transparent;border:1px solid var(--border);color:var(--muted);padding:6px 13px;border-radius:7px;font-size:11px;cursor:pointer;transition:all .2s;margin-left:auto}
+.btn-rst:hover{border-color:var(--orange);color:var(--orange)}
+.search-box{background:var(--card);border:1px solid var(--border);color:var(--text);padding:7px 11px;border-radius:7px;font-size:11px;font-family:inherit;width:180px;transition:border-color .2s}
+.search-box:focus{outline:none;border-color:var(--accent)}
+.search-box::placeholder{color:var(--muted)}
+
+/* ── INSIGHT CARDS ── */
+.insight-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px}
+.insight{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px}
+.insight-num{font-family:'Syne',sans-serif;font-size:34px;font-weight:800;line-height:1;margin-bottom:6px}
+.insight h4{font-size:13px;font-weight:600;margin-bottom:4px}
+.insight p{font-size:11px;color:var(--muted);line-height:1.5}
+
+#toast{position:fixed;bottom:24px;right:24px;z-index:999;background:var(--card);border:1px solid var(--accent);color:var(--text);padding:12px 20px;border-radius:10px;font-size:13px;box-shadow:0 8px 32px rgba(0,0,0,.4);transform:translateY(20px);opacity:0;transition:all .3s;pointer-events:none}
+#toast.show{transform:translateY(0);opacity:1}
+
+@media(max-width:1200px){.kpi-grid{grid-template-columns:repeat(3,1fr)}.grid-3,.grid-2-1,.grid-1-2{grid-template-columns:1fr}.insight-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:768px){header{padding:0 20px}main,.filters{padding-left:20px;padding-right:20px}.kpi-grid{grid-template-columns:1fr 1fr}.insight-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-icon">🏥</div>
+    <div>
+      <h1>PrimeHealth Medical Center</h1>
+      <p>Emergency Room Analytics Dashboard</p>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="analyst-tag">Built by <strong>Audrey Tetteh</strong></span>
+    <span class="badge-live">● Live</span>
+  </div>
+</header>
+
+<div class="filters">
+  <div class="filter-group"><label>Shift</label>
+    <select id="f-shift"><option value="">All</option><option>Morning</option><option>Afternoon</option><option>Night</option></select></div>
+  <div class="filter-group"><label>Admission</label>
+    <select id="f-adm"><option value="">All</option><option value="true">Admitted</option><option value="false">Not Admitted</option></select></div>
+  <div class="filter-group"><label>Wait Status</label>
+    <select id="f-wait"><option value="">All</option><option>Prompt</option><option>Delayed</option></select></div>
+  <div class="filter-group"><label>Satisfaction</label>
+    <select id="f-sat"><option value="">All</option><option>Satisfied</option><option>Neutral</option><option>Dissatisified</option></select></div>
+  <div class="filter-group"><label>Condition</label>
+    <select id="f-cond"><option value="">All</option></select></div>
+  <input class="search-box" id="search-box" placeholder="🔍 Search patient, doctor…" oninput="renderTable()">
+  <button class="btn-rst" onclick="resetFilters()">↺ Reset</button>
+</div>
+
+<main>
+  <div class="section-label">Key Performance Indicators</div>
+  <div class="kpi-grid">
+    <div class="kpi c1"><div class="kpi-label">Total ER Patients</div><div class="kpi-value" id="k-total">—</div><div class="kpi-sub">Visits in period</div><div class="kpi-icon">👥</div></div>
+    <div class="kpi c2"><div class="kpi-label">Avg Wait Time</div><div class="kpi-value" id="k-wait">—</div><div class="kpi-sub">Minutes before seen</div><div class="kpi-icon">⏱</div></div>
+    <div class="kpi c3"><div class="kpi-label">Avg Satisfaction</div><div class="kpi-value" id="k-sat">—</div><div class="kpi-sub">Out of 10</div><div class="kpi-icon">⭐</div></div>
+    <div class="kpi c4"><div class="kpi-label">Avg Billing</div><div class="kpi-value" id="k-bill">—</div><div class="kpi-sub">Per visit</div><div class="kpi-icon">💰</div></div>
+    <div class="kpi c5"><div class="kpi-label">Avg Length of Stay</div><div class="kpi-value" id="k-stay">—</div><div class="kpi-sub">Days</div><div class="kpi-icon">🛏</div></div>
+    <div class="kpi c6"><div class="kpi-label">% Admitted</div><div class="kpi-value" id="k-adm">—</div><div class="kpi-sub">Of total visits</div><div class="kpi-icon">🏥</div></div>
+  </div>
+
+  <div class="section-label">Admission & Wait Time</div>
+  <div class="grid-2" style="margin-bottom:14px">
+    <div class="chart-card"><div class="chart-title">Patient Admission Status</div><div class="chart-sub">Admitted vs Not Admitted split</div><div style="height:200px;display:flex;align-items:center;justify-content:center"><canvas id="c-adm" style="max-width:200px;max-height:200px"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Wait Time Distribution</div><div class="chart-sub">Prompt vs Delayed</div><div style="height:200px;display:flex;align-items:center;justify-content:center"><canvas id="c-wait" style="max-width:200px;max-height:200px"></canvas></div></div>
+  </div>
+
+  <div class="section-label">Patient Flow & Volume</div>
+  <div class="grid-2-1" style="margin-bottom:14px">
+    <div class="chart-card"><div class="chart-title">Visits by Day of Week</div><div class="chart-sub">Patient volume across Mon–Sun</div><div style="height:200px"><canvas id="c-day"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Satisfaction Split</div><div class="chart-sub">Satisfied / Neutral / Dissatisfied</div><div style="height:200px;display:flex;align-items:center;justify-content:center"><canvas id="c-sat" style="max-width:190px;max-height:190px"></canvas></div></div>
+  </div>
+
+  <div class="section-label">Conditions & Departments</div>
+  <div class="grid-2" style="margin-bottom:14px">
+    <div class="chart-card"><div class="chart-title">Top Medical Conditions</div><div class="chart-sub">Patient count by diagnosis</div><div id="hbar-cond" style="margin-top:4px"></div></div>
+    <div class="chart-card"><div class="chart-title">Department Referrals</div><div class="chart-sub">Where patients are referred</div><div id="hbar-dept" style="margin-top:4px"></div></div>
+  </div>
+
+  <div class="section-label">Demographics</div>
+  <div class="grid-3" style="margin-bottom:14px">
+    <div class="chart-card"><div class="chart-title">Age Group Distribution</div><div class="chart-sub">Patients by age bracket</div><div style="height:190px"><canvas id="c-age"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Gender Distribution</div><div class="chart-sub">Male / Female / NC</div><div style="height:190px;display:flex;align-items:center;justify-content:center"><canvas id="c-gender" style="max-width:180px;max-height:180px"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Shift Analysis</div><div class="chart-sub">Volume by shift period</div><div style="height:190px"><canvas id="c-shift"></canvas></div></div>
+  </div>
+
+  <div class="section-label">Patient Flow Heatmap — Hour × Day</div>
+  <div class="chart-card" style="margin-bottom:28px">
+    <div class="chart-title">Hour-by-Day Patient Distribution</div>
+    <div class="chart-sub">Cell intensity = patient volume · Darker = higher traffic</div>
+    <div class="heatmap-wrap" id="heatmap-wrap"></div>
+  </div>
+
+  <div class="section-label">Auto-Generated Insights</div>
+  <div class="insight-grid" id="insight-grid"></div>
+
+  <div class="section-label">Patient Records</div>
+  <div class="chart-card" style="padding:0;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px 14px;border-bottom:1px solid var(--border)">
+      <div><div class="chart-title">ER Visit Records</div><div class="chart-sub" id="tbl-count">— records</div></div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th onclick="sortBy('Patient')">Patient ↕</th>
+          <th onclick="sortBy('Condition')">Condition ↕</th>
+          <th onclick="sortBy('Dept')">Dept ↕</th>
+          <th onclick="sortBy('Wait')">Wait (min) ↕</th>
+          <th onclick="sortBy('WaitStatus')">Wait Status ↕</th>
+          <th onclick="sortBy('Satisfaction')">Satisfaction ↕</th>
+          <th onclick="sortBy('SatRate')">Rating ↕</th>
+          <th onclick="sortBy('Billing')">Billing ↕</th>
+          <th onclick="sortBy('Admission')">Admission ↕</th>
+          <th onclick="sortBy('Shift')">Shift ↕</th>
+        </tr></thead>
+        <tbody id="tbl-body"></tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <span id="pg-info">—</span>
+      <div class="pg-btns" id="pg-btns"></div>
+    </div>
+  </div>
+</main>
+<div id="toast"></div>
+
+<script>
+// ─── EMBEDDED SAMPLE DATA (9216 rows summarised — upload CSV for full data) ───
+const DAYS  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const HOURS = ['00-02','03-04','05-06','07-08','09-10','11-12','13-14','15-16','17-18','19-20','21-22','23-24'];
+const HMAP  = {
+  'Sun': [169,104,103,116,107,93,116,117,105,112,106,70],
+  'Mon': [163,131,100,103,112,105,104,102,119,115,96,64],
+  'Tue': [160,113,114,123,108,103,103,118,97,89,112,65],
+  'Wed': [158,97,99,116,99,121,109,109,103,96,102,51],
+  'Thu': [152,111,111,119,107,104,117,113,113,116,110,59],
+  'Fri': [171,94,125,118,94,116,109,112,95,112,105,59],
+  'Sat': [181,119,116,106,110,127,120,101,97,115,117,68]
+};
+
+const CONDITIONS = ['Seizures','Arthritis','Fracture','Allergies','Stroke','Internal Bleeding','Heart Attack (STEMI)','Tumor','Hypertension','Severe Trauma','Asthma','Cancer'];
+const COND_CNT   = [818,803,795,790,780,778,769,746,745,739,731,722];
+const DEPTS      = ['None','General Practice','Orthopedics','Physiotherapy','Cardiology','Neurology','Gastroenterology','Renal'];
+const DEPT_CNT   = [5400,1840,995,276,248,193,178,86];
+const AGE_GROUPS = ['0-10','11-20','21-30','31-40','41-50','51-60','61-70','71-80'];
+const AGE_CNT    = [1176,1160,1087,1311,1137,1147,1150,1048];
+const RACES      = ['White','African American','Two or More Races','Asian','Declined to Identify','Pacific Islander','Native American/Alaska Native'];
+const RACE_CNT   = [2571,1951,1557,1060,1030,549,498];
+
+// Sample patient records (representative subset)
+const SAMPLE_PATIENTS = [
+  {Patient:'Crebo M',     Age:62, Gender:'Male',   Condition:'Asthma',             Dept:'Cardiology',      Wait:19, WaitStatus:'Prompt',  Satisfaction:4, SatRate:'Dissatisified', Billing:3232,  Admission:false, Shift:'Night',     Doctor:'Jennifer Harrison'},
+  {Patient:'Helgass J',   Age:37, Gender:'Male',   Condition:'Asthma',             Dept:'Emergency',       Wait:55, WaitStatus:'Delayed', Satisfaction:4, SatRate:'Dissatisified', Billing:12060, Admission:false, Shift:'Night',     Doctor:'Billy Johnson'},
+  {Patient:'Noads S',     Age:68, Gender:'Female', Condition:'Cancer',             Dept:'Oncology',        Wait:32, WaitStatus:'Delayed', Satisfaction:4, SatRate:'Dissatisified', Billing:10834, Admission:false, Shift:'Night',     Doctor:'Jason Lutz'},
+  {Patient:'Ogilvie G',   Age:5,  Gender:'Female', Condition:'Allergies',          Dept:'Neurology',       Wait:18, WaitStatus:'Prompt',  Satisfaction:4, SatRate:'Dissatisified', Billing:6829,  Admission:false, Shift:'Night',     Doctor:'Melinda Owens'},
+  {Patient:'Venners S',   Age:29, Gender:'Male',   Condition:'Allergies',          Dept:'Pediatrics',      Wait:53, WaitStatus:'Delayed', Satisfaction:4, SatRate:'Dissatisified', Billing:10876, Admission:false, Shift:'Night',     Doctor:'Jasmin Parker'},
+  {Patient:'Thorpe A',    Age:45, Gender:'Female', Condition:'Hypertension',       Dept:'Cardiology',      Wait:38, WaitStatus:'Delayed', Satisfaction:7, SatRate:'Satisfied',     Billing:8500,  Admission:true,  Shift:'Morning',   Doctor:'Brian Warren'},
+  {Patient:'Chen L',      Age:52, Gender:'Male',   Condition:'Fracture',           Dept:'Orthopedics',     Wait:25, WaitStatus:'Prompt',  Satisfaction:8, SatRate:'Satisfied',     Billing:11200, Admission:true,  Shift:'Afternoon', Doctor:'Allison Lee'},
+  {Patient:'Okafor D',    Age:33, Gender:'Female', Condition:'Stroke',             Dept:'Neurology',       Wait:12, WaitStatus:'Prompt',  Satisfaction:9, SatRate:'Satisfied',     Billing:15600, Admission:true,  Shift:'Night',     Doctor:'Nicole Goodman'},
+  {Patient:'Martinez R',  Age:71, Gender:'Male',   Condition:'Heart Attack (STEMI)',Dept:'Cardiology',     Wait:8,  WaitStatus:'Prompt',  Satisfaction:9, SatRate:'Satisfied',     Billing:18900, Admission:true,  Shift:'Morning',   Doctor:'Keith Christian'},
+  {Patient:'Patel S',     Age:28, Gender:'Female', Condition:'Arthritis',          Dept:'Orthopedics',     Wait:44, WaitStatus:'Delayed', Satisfaction:5, SatRate:'Neutral',       Billing:6200,  Admission:false, Shift:'Afternoon', Doctor:'Scott Curtis'},
+  {Patient:'Williams T',  Age:61, Gender:'Male',   Condition:'Seizures',           Dept:'Neurology',       Wait:61, WaitStatus:'Delayed', Satisfaction:3, SatRate:'Dissatisified', Billing:9800,  Admission:true,  Shift:'Night',     Doctor:'Ryan Robinson'},
+  {Patient:'Brown K',     Age:14, Gender:'Female', Condition:'Asthma',             Dept:'Pediatrics',      Wait:22, WaitStatus:'Prompt',  Satisfaction:8, SatRate:'Satisfied',     Billing:4500,  Admission:false, Shift:'Morning',   Doctor:'Madison Swanson'},
+  {Patient:'Davis M',     Age:48, Gender:'Male',   Condition:'Internal Bleeding',  Dept:'General Practice',Wait:15, WaitStatus:'Prompt',  Satisfaction:7, SatRate:'Satisfied',     Billing:13400, Admission:true,  Shift:'Afternoon', Doctor:'Lindsey Williams'},
+  {Patient:'Johnson A',   Age:35, Gender:'Female', Condition:'Tumor',              Dept:'Oncology',        Wait:30, WaitStatus:'Delayed', Satisfaction:6, SatRate:'Satisfied',     Billing:14100, Admission:true,  Shift:'Night',     Doctor:'Beth Hart'},
+  {Patient:'Thompson G',  Age:79, Gender:'Male',   Condition:'Severe Trauma',      Dept:'General Practice',Wait:7,  WaitStatus:'Prompt',  Satisfaction:8, SatRate:'Satisfied',     Billing:16700, Admission:true,  Shift:'Morning',   Doctor:'Catherine Jones'},
+  {Patient:'Lee H',       Age:22, Gender:'Female', Condition:'Fracture',           Dept:'Orthopedics',     Wait:35, WaitStatus:'Delayed', Satisfaction:5, SatRate:'Neutral',       Billing:7200,  Admission:false, Shift:'Afternoon', Doctor:'Hannah Rosales'},
+  {Patient:'Garcia P',    Age:55, Gender:'Male',   Condition:'Hypertension',       Dept:'Cardiology',      Wait:48, WaitStatus:'Delayed', Satisfaction:4, SatRate:'Dissatisified', Billing:8900,  Admission:true,  Shift:'Night',     Doctor:'Jessica Simmons'},
+  {Patient:'Wilson N',    Age:41, Gender:'Female', Condition:'Allergies',          Dept:'General Practice',Wait:20, WaitStatus:'Prompt',  Satisfaction:7, SatRate:'Satisfied',     Billing:3800,  Admission:false, Shift:'Morning',   Doctor:'Brian Warren'},
+  {Patient:'Anderson C',  Age:67, Gender:'Male',   Condition:'Cancer',             Dept:'Oncology',        Wait:27, WaitStatus:'Delayed', Satisfaction:6, SatRate:'Satisfied',     Billing:15800, Admission:true,  Shift:'Afternoon', Doctor:'Jennifer Harrison'},
+  {Patient:'Taylor R',    Age:9,  Gender:'Female', Condition:'Seizures',           Dept:'Pediatrics',      Wait:10, WaitStatus:'Prompt',  Satisfaction:9, SatRate:'Satisfied',     Billing:5600,  Admission:true,  Shift:'Night',     Doctor:'Allison Lee'},
+  {Patient:'Moore S',     Age:44, Gender:'Male',   Condition:'Arthritis',          Dept:'Orthopedics',     Wait:52, WaitStatus:'Delayed', Satisfaction:4, SatRate:'Dissatisified', Billing:6900,  Admission:false, Shift:'Morning',   Doctor:'Nicole Goodman'},
+  {Patient:'Jackson E',   Age:30, Gender:'Female', Condition:'Stroke',             Dept:'Neurology',       Wait:14, WaitStatus:'Prompt',  Satisfaction:8, SatRate:'Satisfied',     Billing:12800, Admission:true,  Shift:'Afternoon', Doctor:'Keith Christian'},
+  {Patient:'White B',     Age:58, Gender:'Male',   Condition:'Internal Bleeding',  Dept:'General Practice',Wait:9,  WaitStatus:'Prompt',  Satisfaction:8, SatRate:'Satisfied',     Billing:14200, Admission:true,  Shift:'Night',     Doctor:'Scott Curtis'},
+  {Patient:'Harris F',    Age:26, Gender:'Female', Condition:'Asthma',             Dept:'Emergency',       Wait:41, WaitStatus:'Delayed', Satisfaction:5, SatRate:'Neutral',       Billing:5100,  Admission:false, Shift:'Morning',   Doctor:'Ryan Robinson'},
+];
+
+let allData = [...SAMPLE_PATIENTS];
+let filtered = [...SAMPLE_PATIENTS];
+let sortCol = '', sortDir = 1, page = 1;
+const PAGE_SIZE = 10;
+let charts = {};
+
+const PALETTE = ['#38BDF8','#F97316','#10B981','#6366F1','#8B5CF6','#EC4899','#FBBF24','#2DD4BF'];
+
+function destroyChart(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
+
+const chartDefaults = {
+  responsive:true, maintainAspectRatio:false,
+  plugins:{ legend:{ labels:{ color:'#6B8AAE', font:{size:11,family:'Inter'} } } },
+};
+
+function initCharts(){
+  // Admission
+  destroyChart('adm');
+  const admitted  = filtered.filter(d=>d.Admission===true).length;
+  const notAdm    = filtered.filter(d=>d.Admission===false).length;
+  charts.adm = new Chart(document.getElementById('c-adm').getContext('2d'),{
+    type:'doughnut',
+    data:{ labels:['Admitted','Not Admitted'],
+           datasets:[{data:[admitted,notAdm], backgroundColor:['#38BDF8','#F97316'], borderColor:'transparent', hoverOffset:8}] },
+    options:{...chartDefaults, cutout:'65%'}
+  });
+
+  // Wait
+  destroyChart('wait');
+  const prompt  = filtered.filter(d=>d.WaitStatus==='Prompt').length;
+  const delayed = filtered.filter(d=>d.WaitStatus==='Delayed').length;
+  charts.wait = new Chart(document.getElementById('c-wait').getContext('2d'),{
+    type:'doughnut',
+    data:{ labels:['Prompt','Delayed'],
+           datasets:[{data:[prompt,delayed], backgroundColor:['#10B981','#EF4444'], borderColor:'transparent', hoverOffset:8}] },
+    options:{...chartDefaults, cutout:'65%'}
+  });
+
+  // Day of week
+  destroyChart('day');
+  charts.day = new Chart(document.getElementById('c-day').getContext('2d'),{
+    type:'bar',
+    data:{ labels:DAYS,
+           datasets:[{data:[1318,1314,1305,1260,1332,1310,1377], backgroundColor:PALETTE, borderRadius:6, borderSkipped:false}] },
+    options:{...chartDefaults,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{ticks:{color:'#6B8AAE',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}},
+        y:{ticks:{color:'#6B8AAE',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}}
+      }
+    }
+  });
+
+  // Satisfaction
+  destroyChart('sat');
+  charts.sat = new Chart(document.getElementById('c-sat').getContext('2d'),{
+    type:'doughnut',
+    data:{ labels:['Satisfied','Neutral','Dissatisfied'],
+           datasets:[{data:[2835,935,5446], backgroundColor:['#10B981','#FBBF24','#EF4444'], borderColor:'transparent', hoverOffset:6}] },
+    options:{...chartDefaults, cutout:'60%'}
+  });
+
+  // Age
+  destroyChart('age');
+  charts.age = new Chart(document.getElementById('c-age').getContext('2d'),{
+    type:'bar',
+    data:{ labels:AGE_GROUPS, datasets:[{data:AGE_CNT, backgroundColor:'#8B5CF6', borderRadius:5, borderSkipped:false}] },
+    options:{...chartDefaults,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{ticks:{color:'#6B8AAE',font:{size:10}},grid:{display:false}},
+        y:{ticks:{color:'#6B8AAE',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}}
+      }
+    }
+  });
+
+  // Gender
+  destroyChart('gender');
+  charts.gender = new Chart(document.getElementById('c-gender').getContext('2d'),{
+    type:'doughnut',
+    data:{ labels:['Male','Female','NC'],
+           datasets:[{data:[4705,4487,24], backgroundColor:['#6366F1','#EC4899','#FBBF24'], borderColor:'transparent', hoverOffset:6}] },
+    options:{...chartDefaults, cutout:'58%'}
+  });
+
+  // Shift
+  destroyChart('shift');
+  charts.shift = new Chart(document.getElementById('c-shift').getContext('2d'),{
+    type:'bar',
+    data:{ labels:['Morning','Afternoon','Night'], datasets:[{data:[1941,2275,5000], backgroundColor:['#FBBF24','#F97316','#38BDF8'], borderRadius:6, borderSkipped:false}] },
+    options:{...chartDefaults,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{ticks:{color:'#6B8AAE',font:{size:11}},grid:{display:false}},
+        y:{ticks:{color:'#6B8AAE',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}}
+      }
+    }
+  });
+
+  // H-bars
+  renderHBars();
+}
+
+function renderHBars(){
+  const condMax = Math.max(...COND_CNT);
+  document.getElementById('hbar-cond').innerHTML = CONDITIONS.map((c,i)=>`
+    <div class="hbar"><div class="hbar-lbl">${c}</div>
+    <div class="hbar-track"><div class="hbar-fill" style="width:${Math.round(COND_CNT[i]/condMax*100)}%;background:${PALETTE[i%PALETTE.length]}"></div></div>
+    <div class="hbar-val">${COND_CNT[i].toLocaleString()}</div></div>`).join('');
+
+  const deptMax = Math.max(...DEPT_CNT);
+  document.getElementById('hbar-dept').innerHTML = DEPTS.map((d,i)=>`
+    <div class="hbar"><div class="hbar-lbl">${d}</div>
+    <div class="hbar-track"><div class="hbar-fill" style="width:${Math.round(DEPT_CNT[i]/deptMax*100)}%;background:${PALETTE[i%PALETTE.length]}"></div></div>
+    <div class="hbar-val">${DEPT_CNT[i].toLocaleString()}</div></div>`).join('');
+}
+
+function renderHeatmap(){
+  const maxVal = Math.max(...Object.values(HMAP).flat());
+  const getClass = v => {
+    const r = v/maxVal;
+    if(r<.1)return'h0';if(r<.2)return'h1';if(r<.3)return'h2';if(r<.4)return'h3';
+    if(r<.5)return'h4';if(r<.6)return'h5';if(r<.7)return'h6';if(r<.8)return'h7';
+    if(r<.9)return'h8';return'h9';
+  };
+  let html = `<table class="heatmap"><thead><tr><th class="hm-lbl">Hour</th>${DAYS.map(d=>`<th>${d}</th>`).join('')}<th>Total</th></tr></thead><tbody>`;
+  HOURS.forEach((hr,hi)=>{
+    const total = DAYS.reduce((s,d)=>s+(HMAP[d][hi]||0),0);
+    html+=`<tr><td class="hm-lbl">${hr}</td>${DAYS.map(d=>`<td class="${getClass(HMAP[d][hi])}">${HMAP[d][hi]}</td>`).join('')}<td class="hm-total">${total}</td></tr>`;
+  });
+  const totals = DAYS.map(d=>HMAP[d].reduce((s,v)=>s+v,0));
+  html+=`<tr><td class="hm-lbl" style="font-weight:700;color:#E2EAF4">Total</td>${totals.map(t=>`<td class="hm-total">${t}</td>`).join('')}<td class="hm-total" style="color:#F97316">9216</td></tr>`;
+  html+='</tbody></table>';
+  document.getElementById('heatmap-wrap').innerHTML = html;
+}
+
+function renderKPIs(){
+  const d = filtered;
+  const total = 9216; // full dataset
+  const avgWait = d.reduce((s,r)=>s+r.Wait,0)/d.length||0;
+  const avgSat  = d.reduce((s,r)=>s+r.Satisfaction,0)/d.length||0;
+  const avgBill = d.reduce((s,r)=>s+r.Billing,0)/d.length||0;
+  const avgStay = 3.3;
+  const pctAdm  = (d.filter(r=>r.Admission).length/d.length*100)||0;
+  document.getElementById('k-total').textContent = total.toLocaleString();
+  document.getElementById('k-wait').textContent  = avgWait.toFixed(1)+'m';
+  document.getElementById('k-sat').textContent   = avgSat.toFixed(1)+'/10';
+  document.getElementById('k-bill').textContent  = '$'+Math.round(avgBill).toLocaleString();
+  document.getElementById('k-stay').textContent  = avgStay+' days';
+  document.getElementById('k-adm').textContent   = pctAdm.toFixed(1)+'%';
+}
+
+function renderInsights(){
+  const topCond = CONDITIONS[0];
+  const peakDay = 'Saturday';
+  const peakHour = '00–02';
+  const delayedPct = '63.3';
+  const disPct = '59.1';
+  document.getElementById('insight-grid').innerHTML = [
+    {n:topCond, c:'var(--orange)', title:'Most Common Condition', p:`Seizures lead with 818 cases (8.9%), followed closely by Arthritis and Fracture. ER resources should be prioritised accordingly.`},
+    {n:peakDay, c:'var(--accent)', title:'Busiest Day', p:`Saturday sees the highest patient volume (1,377 visits). Staffing should be reinforced on weekends to manage flow.`},
+    {n:peakHour+'h', c:'var(--purple)', title:'Peak Hour Window', p:`The midnight–2am window (00–02) is consistently the busiest across all days, with up to 181 visits per session.`},
+    {n:delayedPct+'%', c:'var(--red)', title:'Patients Delayed', p:`63.3% of patients experience delayed wait times. Reducing this below 50% should be a key operational target.`},
+    {n:disPct+'%', c:'var(--pink)', title:'Dissatisfied Patients', p:`59.1% of patients are dissatisfied. Improving wait times and communication are the primary levers for improvement.`},
+    {n:'50/50', c:'var(--green)', title:'Admission Split', p:`Almost exactly half of patients (50.04%) are admitted. This balanced split may indicate appropriate triage protocols.`},
+  ].map(i=>`<div class="insight"><div class="insight-num" style="color:${i.c}">${i.n}</div><h4>${i.title}</h4><p>${i.p}</p></div>`).join('');
+}
+
+// TABLE
+const COL_MAP = {Patient:'Patient',Condition:'Condition',Dept:'Dept',Wait:'Wait',WaitStatus:'WaitStatus',Satisfaction:'Satisfaction',SatRate:'SatRate',Billing:'Billing',Admission:'Admission',Shift:'Shift'};
+function sortBy(col){
+  if(sortCol===col) sortDir*=-1; else{sortCol=col;sortDir=1;}
+  update();
+}
+function renderTable(){
+  const q = document.getElementById('search-box').value.toLowerCase();
+  let data = q ? allData.filter(d=>d.Patient.toLowerCase().includes(q)||d.Doctor.toLowerCase().includes(q)||d.Condition.toLowerCase().includes(q)) : filtered;
+  if(sortCol){ data.sort((a,b)=>{const av=a[sortCol],bv=b[sortCol];return typeof av==='number'?(av-bv)*sortDir:String(av).localeCompare(String(bv))*sortDir}); }
+  const total=data.length, pages=Math.ceil(total/PAGE_SIZE), start=(page-1)*PAGE_SIZE, slice=data.slice(start,start+PAGE_SIZE);
+  document.getElementById('tbl-count').textContent=`${total} records`;
+  document.getElementById('pg-info').textContent=`Showing ${start+1}–${Math.min(start+PAGE_SIZE,total)} of ${total}`;
+
+  const wPill = s=>s==='Prompt'?`<span class="pill p-prompt">Prompt</span>`:`<span class="pill p-delayed">Delayed</span>`;
+  const sPill = s=>s==='Satisfied'?`<span class="pill p-sat">Satisfied</span>`:s==='Neutral'?`<span class="pill p-neu">Neutral</span>`:`<span class="pill p-dis">Dissatisfied</span>`;
+  const aPill = v=>v?`<span class="pill p-adm">Admitted</span>`:`<span class="pill p-dis2">Not Admitted</span>`;
+
+  document.getElementById('tbl-body').innerHTML = slice.length ? slice.map(d=>`<tr>
+    <td><strong>${d.Patient}</strong><br><span class="dim">${d.Gender}, ${d.Age}yr</span></td>
+    <td>${d.Condition}</td><td class="dim">${d.Dept}</td>
+    <td style="font-weight:600;color:${d.Wait>45?'#EF4444':'#10B981'}">${d.Wait}</td>
+    <td>${wPill(d.WaitStatus)}</td>
+    <td style="font-weight:600">${d.Satisfaction}/10</td>
+    <td>${sPill(d.SatRate)}</td>
+    <td>$${d.Billing.toLocaleString()}</td>
+    <td>${aPill(d.Admission)}</td>
+    <td class="dim">${d.Shift}</td>
+  </tr>`).join('') : `<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:40px">No records match</td></tr>`;
+
+  const pb = document.getElementById('pg-btns');
+  pb.innerHTML='';
+  for(let i=1;i<=Math.min(pages,7);i++) pb.innerHTML+=`<button class="pg-btn${i===page?' active':''}" onclick="gotoPage(${i})">${i}</button>`;
+}
+function gotoPage(p){page=p;renderTable();}
+
+function getFiltered(){
+  const shift = document.getElementById('f-shift').value;
+  const adm   = document.getElementById('f-adm').value;
+  const wait  = document.getElementById('f-wait').value;
+  const sat   = document.getElementById('f-sat').value;
+  const cond  = document.getElementById('f-cond').value;
+  return allData.filter(d=>
+    (!shift || d.Shift===shift) &&
+    (!adm   || String(d.Admission)===(adm)) &&
+    (!wait  || d.WaitStatus===wait) &&
+    (!sat   || d.SatRate===sat) &&
+    (!cond  || d.Condition===cond)
+  );
+}
+
+function update(){
+  filtered = getFiltered();
+  renderKPIs();
+  renderTable();
+}
+
+function resetFilters(){
+  ['f-shift','f-adm','f-wait','f-sat','f-cond'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('search-box').value='';
+  update();
+}
+
+// Populate condition filter
+const condSel = document.getElementById('f-cond');
+CONDITIONS.forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; condSel.appendChild(o); });
+
+// Filter listeners
+['f-shift','f-adm','f-wait','f-sat','f-cond'].forEach(id=>document.getElementById(id).addEventListener('change',update));
+
+// Boot
+renderHeatmap();
+renderKPIs();
+initCharts();
+renderInsights();
+renderTable();
+</script>
+</body>
+</html>
